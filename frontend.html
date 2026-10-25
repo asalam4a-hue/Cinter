@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>نظام إدارة ومتابعة العقود</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+:root{--bg:#070b1a;--panel:rgba(18,26,58,.72);--panel2:rgba(255,255,255,.04);--line:rgba(130,155,255,.18);--tx:#e8ecff;--mut:#8f9bc4;--pri:#4f8cff;--ok:#2de2a6;--warn:#ffb020;--bad:#ff4d6d}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font-family:'Cairo',Tahoma,Arial,sans-serif;color:var(--tx);overflow:hidden;
+ background:radial-gradient(1100px 600px at 85% -10%,rgba(40,70,180,.38),transparent),radial-gradient(900px 500px at -5% 110%,rgba(120,40,170,.30),transparent),var(--bg)}
+[hidden]{display:none!important}
+button,input,select,textarea{font-family:inherit;font-size:14px;color:var(--tx)}
+input,select,textarea{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:10px;padding:8px 10px;outline:none;transition:.2s;min-width:0}
+input:focus,select:focus,textarea:focus{border-color:var(--pri);box-shadow:0 0 0 3px rgba(79,140,255,.2)}
+select option{background:#101838;color:#fff}
+input[type=date]{color-scheme:dark}
+::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-thumb{background:rgba(130,155,255,.3);border-radius:9px}
+.btn{border:1px solid var(--line);background:var(--panel2);padding:8px 14px;border-radius:10px;cursor:pointer;transition:.2s;white-space:nowrap}
+.btn:hover{background:rgba(255,255,255,.1);transform:translateY(-1px)}
+.btn.pri{background:linear-gradient(135deg,#3b6cff,#7a4dff);border-color:transparent;box-shadow:0 4px 18px -4px #4f6cff}
+.btn.bad{background:rgba(255,77,109,.15);border-color:rgba(255,77,109,.5)}
+.btn.sm{padding:4px 9px;font-size:12px}
+.ib{background:none;border:1px solid var(--line);border-radius:10px;width:38px;height:38px;cursor:pointer;font-size:16px}
+.ib:hover{background:rgba(255,255,255,.08)}
+/* login */
+.login{position:fixed;inset:0;display:grid;place-items:center;z-index:50;padding:16px}
+.lbox{width:min(400px,100%);padding:30px;border-radius:22px;background:var(--panel);border:1px solid var(--line);backdrop-filter:blur(14px);box-shadow:0 0 60px -10px #4f6cff;text-align:center;animation:rise .7s backwards}
+.lbox .logo{width:92px;height:92px;margin:0 auto 10px;animation:float 4s ease-in-out infinite}
+.lbox h1{font-size:20px;margin:6px 0 18px}
+.lbox input{width:100%;margin-bottom:10px}
+.lbox .btn{width:100%;padding:10px}
+.logo{display:grid;place-items:center;font-size:42px;border-radius:20px;overflow:hidden;background:linear-gradient(135deg,#2a3fa8,#6a2fb8);box-shadow:0 0 28px -4px #6a7dff}
+.logo img{width:100%;height:100%;object-fit:contain;background:#fff}
+.err{color:var(--bad);min-height:20px;font-size:13px;margin-top:8px}
+/* layout */
+#app{display:grid;grid-template-columns:232px 1fr;grid-template-rows:62px 1fr;grid-template-areas:"top top" "nav main";height:100vh}
+.top{grid-area:top;display:flex;align-items:center;gap:12px;padding:0 16px;border-bottom:1px solid var(--line);background:rgba(8,12,30,.7);backdrop-filter:blur(10px)}
+.top .logo{width:42px;height:42px;font-size:22px;border-radius:12px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:17px}
+.sp{flex:1}
+.clock{font-size:13px;color:var(--mut);text-align:left;direction:ltr}
+.uchip{display:flex;align-items:center;gap:8px;padding:4px 12px 4px 4px;border:1px solid var(--line);border-radius:30px;font-size:13px}
+.uchip img,.uchip .av{width:30px;height:30px;border-radius:50%;object-fit:cover;background:#2a3b8a;display:grid;place-items:center}
+nav{grid-area:nav;padding:14px 10px;border-left:1px solid var(--line);overflow:auto;background:rgba(8,12,30,.45)}
+nav a{display:flex;align-items:center;gap:10px;padding:11px 14px;margin-bottom:6px;border-radius:12px;color:var(--mut);cursor:pointer;transition:.25s;border:1px solid transparent;font-weight:600}
+nav a:hover{color:var(--tx);background:rgba(255,255,255,.05)}
+nav a.on{color:#fff;background:linear-gradient(135deg,rgba(59,108,255,.35),rgba(122,77,255,.3));border-color:rgba(122,140,255,.5);box-shadow:0 0 22px -6px #6a7dff}
+main{grid-area:main;overflow:auto;padding:18px 20px 40px}
+.vh{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:14px}
+.vh h2{margin:0;font-size:21px;margin-inline-end:auto}
+.tb{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.tools{display:flex;gap:6px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;backdrop-filter:blur(8px);margin-bottom:16px}
+.panel h3{margin:0 0 10px;font-size:15px;display:flex;align-items:center;gap:8px}
+.panel h3 .tools{margin-inline-start:auto}
+.grid{display:grid;gap:12px}
+.g4{grid-template-columns:repeat(auto-fill,minmax(190px,1fr))}
+.g7{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
+@media(min-width:1180px){.g7{grid-template-columns:repeat(7,1fr)}.g4{grid-template-columns:repeat(4,1fr)}}
+.g2{grid-template-columns:repeat(auto-fit,minmax(380px,1fr))}
+.cbox{position:relative;height:300px}
+/* KPI */
+.kpi{--c:#4f8cff;position:relative;padding:14px 16px;border-radius:16px;overflow:hidden;cursor:pointer;
+ background:linear-gradient(160deg,rgba(255,255,255,.07),rgba(255,255,255,.015));
+ border:1px solid color-mix(in srgb,var(--c) 50%,transparent);
+ box-shadow:0 0 18px -4px var(--c);
+ animation:rise .6s cubic-bezier(.2,.9,.3,1.15) backwards,glow 3.2s ease-in-out infinite;animation-delay:calc(var(--i)*60ms),calc(var(--i)*200ms);
+ transition:transform .25s,filter .25s}
+.kpi:hover{transform:translateY(-4px) scale(1.02);filter:brightness(1.2)}
+.kpi.on{outline:2px solid var(--c);outline-offset:2px}
+.kpi::before{content:'';position:absolute;top:-60%;left:-40%;width:45%;height:220%;pointer-events:none;background:linear-gradient(100deg,transparent,rgba(255,255,255,.14),transparent);transform:rotate(14deg);animation:sweep 6s ease-in-out infinite;animation-delay:calc(var(--i)*350ms)}
+.kpi .ic{position:absolute;inset-inline-end:12px;top:10px;font-size:26px;animation:bob 3s ease-in-out infinite;animation-delay:calc(var(--i)*250ms);filter:drop-shadow(0 0 8px var(--c))}
+.kpi .l{font-size:13px;color:var(--mut);margin-bottom:6px;padding-inline-end:34px}
+.kpi .v{font-size:28px;font-weight:800;color:#fff;text-shadow:0 0 16px var(--c);line-height:1.1}
+.kpi .s{font-size:12px;color:var(--mut);margin-top:4px}
+.kpi .bar{height:4px;border-radius:4px;background:rgba(255,255,255,.1);margin-top:8px;overflow:hidden}
+.kpi .bar i{display:block;height:100%;background:var(--c);box-shadow:0 0 10px var(--c);border-radius:4px;transition:width 1s}
+@keyframes rise{from{opacity:0;transform:translateY(18px) scale(.96)}}
+@keyframes glow{0%,100%{box-shadow:0 0 12px -4px var(--c)}50%{box-shadow:0 0 28px -2px var(--c)}}
+@keyframes sweep{0%,55%{left:-50%}100%{left:130%}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+/* pipeline */
+.pipe{display:flex;gap:6px;overflow:auto;padding:4px}
+.seg{--c:#888;flex:1 1 0;min-width:96px;padding:12px 8px;text-align:center;border-radius:12px;cursor:pointer;border:1px solid color-mix(in srgb,var(--c) 55%,transparent);background:color-mix(in srgb,var(--c) 14%,transparent);transition:.25s;position:relative;animation:rise .5s backwards}
+.seg b{display:block;font-size:22px;text-shadow:0 0 12px var(--c)}
+.seg span{font-size:12px;color:var(--mut)}
+.seg:hover{transform:translateY(-3px);box-shadow:0 0 22px -4px var(--c)}
+.seg.on{background:color-mix(in srgb,var(--c) 35%,transparent);box-shadow:0 0 26px -2px var(--c)}
+.seg::after{content:'◂';position:absolute;inset-inline-end:-10px;top:50%;transform:translateY(-50%);color:var(--mut);font-size:12px;z-index:2}
+.seg:last-child::after{display:none}
+.chip{display:inline-flex;gap:6px;align-items:center;padding:3px 10px;border-radius:20px;background:rgba(79,140,255,.2);border:1px solid var(--pri);font-size:12px;cursor:pointer}
+/* tables */
+.tw{overflow:auto;max-height:68vh;border-radius:12px;border:1px solid var(--line)}
+table.dt{width:100%;border-collapse:collapse;font-size:13px}
+.dt th,.dt td{padding:8px 10px;text-align:right;border-bottom:1px solid rgba(130,155,255,.1);white-space:nowrap}
+.dt thead th{position:sticky;top:0;background:#111a3f;z-index:2;cursor:pointer;user-select:none}
+.dt thead tr.fr th{top:37px;background:#0d1535;padding:4px 6px;cursor:default;z-index:2}
+.dt .fr input{width:100%;min-width:70px;padding:4px 7px;font-size:12px;border-radius:7px}
+.dt tbody tr:hover{background:rgba(120,150,255,.09)}
+.dt tfoot td{position:sticky;bottom:0;background:#111a3f;font-weight:700;border-top:1px solid var(--line)}
+.dt td.n{font-variant-numeric:tabular-nums}
+.dt td.late{color:var(--bad);font-weight:700}
+.dt .ac{width:1%}
+.dt td.ac{white-space:nowrap}
+.tmore{text-align:center;margin-top:8px}
+.bd{--c:#888;display:inline-block;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:700;background:color-mix(in srgb,var(--c) 20%,transparent);border:1px solid color-mix(in srgb,var(--c) 60%,transparent);color:#fff;box-shadow:0 0 10px -3px var(--c)}
+.pg{min-width:90px;height:8px;border-radius:8px;background:rgba(255,255,255,.1);overflow:hidden;display:inline-block;vertical-align:middle;width:90px}
+.pg i{display:block;height:100%;background:linear-gradient(90deg,#4f8cff,#2de2a6);border-radius:8px}
+/* modal */
+.ov{position:fixed;inset:0;background:rgba(3,6,18,.72);backdrop-filter:blur(4px);display:grid;place-items:center;z-index:60;padding:14px;animation:fade .2s}
+.md{width:min(560px,100%);max-height:92vh;display:flex;flex-direction:column;background:#0e1636;border:1px solid var(--line);border-radius:18px;box-shadow:0 0 50px -8px #4f6cff;animation:rise .35s}
+.md.wide{width:min(1000px,100%)}
+.mh{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--line);font-size:16px}
+.mh .x{background:none;border:0;cursor:pointer;font-size:18px}
+.mb{padding:16px 18px;overflow:auto}
+@keyframes fade{from{opacity:0}}
+.fg{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.fg label{display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--mut)}
+.fg label.full{grid-column:1/-1}
+.fg input,.fg select,.fg textarea{width:100%;color:var(--tx)}
+.fa{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+.perm{border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:8px}
+.perm h4{margin:0 0 8px;display:flex;align-items:center;gap:10px;font-size:14px}
+.perm .pl{display:flex;flex-wrap:wrap;gap:6px 16px}
+.perm label{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--tx);cursor:pointer}
+.perm input{width:auto}
+.avatar{width:84px;height:84px;border-radius:50%;object-fit:cover;background:#1d2a66;display:grid;place-items:center;font-size:30px;border:2px solid var(--line)}
+.upl{display:flex;align-items:center;gap:12px}
+.tl{list-style:none;margin:0;padding:0;position:relative}
+.tl li{position:relative;padding:8px 26px 8px 0;margin-bottom:4px}
+.tl li::before{content:'';position:absolute;right:6px;top:14px;width:10px;height:10px;border-radius:50%;background:var(--c,#4f8cff);box-shadow:0 0 10px var(--c,#4f8cff)}
+.tl li::after{content:'';position:absolute;right:10px;top:26px;bottom:-12px;width:2px;background:var(--line)}
+.tl li:last-child::after{display:none}
+.mut{color:var(--mut);font-size:13px}
+#toasts{position:fixed;bottom:18px;left:18px;z-index:99;display:flex;flex-direction:column;gap:8px}
+.toast{padding:10px 16px;border-radius:12px;background:#12204f;border:1px solid var(--ok);box-shadow:0 0 20px -4px var(--ok);animation:rise .3s;transition:.4s}
+.toast.err{border-color:var(--bad);box-shadow:0 0 20px -4px var(--bad)}
+.toast.out{opacity:0;transform:translateX(-20px)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.tabs button{padding:8px 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);cursor:pointer}
+.tabs button.on{background:linear-gradient(135deg,#3b6cff,#7a4dff);border-color:transparent;box-shadow:0 0 18px -4px #6a7dff}
+.fb{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end}
+.fb label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--mut)}
+.empty{padding:30px;text-align:center;color:var(--mut)}
+@media(max-width:900px){#app{grid-template-columns:1fr;grid-template-areas:"top" "main"}nav{position:fixed;top:62px;bottom:0;right:0;width:230px;z-index:40;background:#0a1030;transform:translateX(100%);transition:.3s}nav.open{transform:none}.clock{display:none}.g2{grid-template-columns:1fr}}
+@media(min-width:901px){#menu{display:none}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ===== ثيم أبيض بنصوص سوداء ===== */
+:root{--bg:#fff;--panel:#fff;--panel2:#f3f5fb;--line:#cfd6ea;--tx:#000;--mut:#222}
+body{background:#fff;color:#000}
+input,select,textarea{background:#fff;color:#000;border-color:#b9c3e0}
+select option{background:#fff;color:#000}
+input[type=date]{color-scheme:light}
+.btn{background:#f3f5fb;color:#000}.btn:hover{background:#e3e9fa}
+.btn.pri{background:linear-gradient(135deg,#cfe0ff,#e3d6ff);color:#000;border-color:#9db4ee;box-shadow:0 2px 10px -4px #6a7dff}
+.btn.bad{background:#ffe3e8;border-color:#ff9bab;color:#000}
+.ib{color:#000}.ib:hover{background:#eef2fc}
+.lbox{background:#fff;box-shadow:0 10px 50px -12px rgba(60,90,200,.5)}
+.logo{background:linear-gradient(135deg,#e3ebff,#efe3ff);box-shadow:0 0 18px -6px #6a7dff}
+.top{background:#fff}nav{background:#f6f8fe}
+nav a{color:#000}nav a:hover{background:#eaf0ff}
+nav a.on{color:#000;background:linear-gradient(135deg,#dbe6ff,#ebdfff);border-color:#9db4ee;box-shadow:0 0 14px -6px #6a7dff}
+.panel{background:#fff;backdrop-filter:none;box-shadow:0 2px 10px -6px rgba(40,60,140,.4)}
+.kpi{background:linear-gradient(160deg,#fff,#f4f7ff)}
+.kpi .v{color:#000;text-shadow:none}.kpi .l,.kpi .s{color:#222}
+.kpi .bar{background:rgba(0,0,0,.1)}.kpi:hover{filter:none}
+.kpi::before{background:linear-gradient(100deg,transparent,rgba(255,255,255,.95),transparent)}
+.seg b{text-shadow:none;color:#000}.seg span{color:#000}
+.dt thead th{background:#e9eefc;color:#000}.dt thead tr.fr th{background:#f4f6fd}
+.dt tfoot td{background:#e9eefc}.dt tbody tr:hover{background:#eef3ff}
+.dt th,.dt td{border-bottom:1px solid #e1e6f5}
+.bd{color:#000}.pg{background:rgba(0,0,0,.1)}
+.ov{background:rgba(0,0,0,.4)}.md{background:#fff}
+.toast{background:#fff;color:#000}
+.tabs button{color:#000;background:#f3f5fb}
+.tabs button.on{background:linear-gradient(135deg,#cfe0ff,#e3d6ff);color:#000;box-shadow:0 0 12px -4px #6a7dff;border-color:#9db4ee}
+.uchip .av,.avatar{background:#e6ecff}
+.chip{color:#000;background:#e3ecff}.perm label{color:#000}
+::-webkit-scrollbar-thumb{background:rgba(60,90,200,.35)}
+.lnk{color:#000;font-weight:700;text-decoration:underline;text-decoration-color:#4f8cff;cursor:pointer;padding:0 2px;border-radius:4px}.lnk:hover{background:#e3ecff}
+.dgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;margin-bottom:12px}
+.dgrid div{border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-weight:700}
+.dgrid small{display:block;color:#222;font-size:12px;font-weight:400}
+.mb h4{margin:14px 0 6px}
+.dlink{cursor:pointer;border-bottom:1px dotted #4f8cff}.dlink:hover{background:#e3ecff}
+.stsel{padding:3px 6px;border-radius:8px;font-weight:700;border:2px solid #aaa;background:#fff;color:#000;cursor:pointer}
+</style>
+</head>
+<body>
+<div id="login" class="login" hidden>
+ <div class="lbox">
+  <div class="logo lg-logo"></div>
+  <h1 class="lg-name"></h1>
+  <input id="lu" placeholder="اسم المستخدم" autocomplete="username">
+  <input id="lp" type="password" placeholder="كلمة المرور" autocomplete="current-password">
+  <button class="btn pri" id="lgo">دخول</button>
+  <div class="err" id="lerr"></div>
+ </div>
+</div>
+<div id="app" hidden>
+ <header class="top">
+  <button class="ib" id="menu">☰</button>
+  <div class="brand"><span class="logo" id="hlogo"></span><span id="hname"></span></div>
+  <div class="sp"></div>
+  <div class="clock" id="clock"></div>
+  <div class="uchip" id="uchip"></div>
+  <button class="ib" id="pwb" title="تغيير كلمة المرور">🔑</button>
+  <button class="ib" id="outb" title="تسجيل الخروج">⏻</button>
+ </header>
+ <nav id="nav"></nav>
+ <main id="view"></main>
+</div>
+<div id="toasts"></div>
+
+<script>
+'use strict';
+const API_URL='__API_URL__';
+const STAGES=['--','جارى التصنيع','تم التصنيع','الجودة','تسليم مخازن','تسليم التجاريه','استلام العقد من العميل'];
+const SC=['#8892b0','#ffb020','#19c3ff','#b36bff','#2de2a6','#ff5fa2','#4ade80'];
+const FINAL=STAGES[6];
+const DATE_FIELDS=[['created_at','تاريخ الإضافة'],['receive_date','تاريخ استلام العقد'],['delivery_date','تاريخ تسليم العقد'],['stage_date','تاريخ المرحلة']];
+const PERM_TREE=[
+ {k:'dashboard',t:'الشاشة الرئيسية',items:[['view','فتح الشاشة'],['kpi','كروت KPI'],['charts','الرسوم البيانية'],['print','طباعة'],['export','تصدير Excel / PDF'],['whatsapp','إرسال واتس']]},
+ {k:'contracts',t:'شاشة العقود',items:[['view','فتح الشاشة'],['add','إضافة عقد'],['edit','تعديل عقد'],['stage','تغيير المرحلة'],['delete','حذف عقد'],['print','طباعة'],['export','تصدير Excel / PDF'],['whatsapp','إرسال واتس']]},
+ {k:'follow',t:'شاشة متابعة العقود',items:[['view','فتح الشاشة'],['print','طباعة'],['export','تصدير Excel / PDF'],['whatsapp','إرسال واتس']]},
+ {k:'reports',t:'شاشة التقارير',items:[['view','فتح الشاشة'],['rep_contracts','تقارير العقود'],['rep_units','تقرير الوحدات'],['rep_projects','تقرير المشروعات'],['rep_today','تقرير اليوم'],['rep_date','تقرير تاريخ محدد'],['rep_stages','تقرير مراحل الإنتاج'],['print','طباعة'],['export','تصدير Excel / PDF'],['whatsapp','إرسال واتس']]},
+ {k:'users',t:'شاشة المستخدمين',items:[['view','فتح الشاشة'],['add','إضافة مستخدم'],['edit','تعديل مستخدم'],['delete','حذف مستخدم']]},
+ {k:'settings',t:'شاشة إدارة البرنامج',items:[['view','فتح الشاشة'],['edit','تعديل الإعدادات'],['demo','تحميل بيانات تجريبية']]}
+];
+const NAV=[['dashboard','الشاشة الرئيسية','📊'],['contracts','العقود','📄'],['follow','متابعة العقود','🛰️'],['reports','التقارير','📑'],['users','المستخدمون','👥'],['settings','إدارة البرنامج','⚙️']];
+
+/* ---------- helpers ---------- */
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const E=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num=v=>{const n=Number(v);return isFinite(n)?n:0};
+const fnum=v=>num(v).toLocaleString('en-US',{maximumFractionDigits:2});
+const pad=n=>String(n).padStart(2,'0');
+const iso=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const today=()=>iso(new Date());
+const addDays=(s,n)=>{const d=new Date(s+'T00:00:00');d.setDate(d.getDate()+n);return iso(d)};
+const sIdx=s=>{const i=STAGES.indexOf(s);return i<0?0:i};
+const S={user:null,settings:{name:'نظام إدارة ومتابعة العقود',logo:'',units:[],wa_phone:''},contracts:[],history:[],users:[]};
+let cur='dashboard',BLK={},CH={},INST={};
+const can=p=>!!S.user&&(S.user.is_admin||(S.user.perms||[]).includes(p));
+const badge=s=>`<span class="bd" style="--c:${SC[sIdx(s)]}">${E(s||'--')}</span>`;
+const ctrLink=r=>`<a class="lnk" data-ctr="${r.contract_id||r.id}">${E(r.contract_no)}</a>`;
+const prjLink=n=>n?`<a class="lnk" data-proj="${E(n)}">${E(n)}</a>`:'—';
+const ctrCol={k:'contract_no',t:'رقم العقد',html:ctrLink},prjCol={k:'project_name',t:'اسم المشروع',html:r=>prjLink(r.project_name)};
+const allProjects=()=>[...new Set(S.contracts.map(c=>c.project_name).filter(Boolean))].sort();
+const isLate=r=>!!r.delivery_date&&r.delivery_date<today()&&r.stage!==FINAL;
+const isDue=r=>!!r.delivery_date&&r.delivery_date>=today()&&r.delivery_date<=addDays(today(),7)&&r.stage!==FINAL;
+const prog=r=>Math.round(sIdx(r.stage)/6*100);
+const allUnits=()=>[...new Set([...(S.settings.units||[]),...S.contracts.map(c=>c.unit).filter(Boolean)])];
+const groupBy=(rows,fn)=>{const m=new Map();rows.forEach(r=>{const k=fn(r);if(!m.has(k))m.set(k,[]);m.get(k).push(r)});return m};
+const sum=(rows,k)=>rows.reduce((a,r)=>a+num(r[k]),0);
+
+function toast(msg,type){const t=document.createElement('div');t.className='toast '+(type==='err'?'err':'');t.textContent=msg;$('#toasts').appendChild(t);setTimeout(()=>t.classList.add('out'),2800);setTimeout(()=>t.remove(),3300)}
+function modal(title,body,opt={}){const o=document.createElement('div');o.className='ov';o.innerHTML=`<div class="md ${opt.wide?'wide':''}"><div class="mh"><b>${E(title)}</b><button class="x" data-x>✕</button></div><div class="mb"></div></div>`;const mb=$('.mb',o);if(typeof body==='string')mb.innerHTML=body;else mb.appendChild(body);document.body.appendChild(o);const close=()=>{o.remove();if(opt.onClose)opt.onClose()};if(!opt.sticky)o.addEventListener('mousedown',e=>{if(e.target===o)close()});$('[data-x]',o).onclick=close;return{el:o,body:mb,close}}
+function confirmBox(msg){return new Promise(res=>{const m=modal('تأكيد',`<p>${E(msg)}</p><div class="fa"><button class="btn" data-n>إلغاء</button><button class="btn bad" data-y>تأكيد</button></div>`,{sticky:true});$('[data-n]',m.el).onclick=()=>{m.close();res(false)};$('[data-y]',m.el).onclick=()=>{m.close();res(true)}})}
+async function act(fn){try{return await fn()}catch(e){if(e.message!=='AUTH')toast(e.message||'حدث خطأ','err');return undefined}}
+function imgData(file,max=256){return new Promise((ok,no)=>{const fr=new FileReader();fr.onerror=()=>no(new Error('تعذر قراءة الملف'));fr.onload=()=>{const im=new Image();im.onerror=()=>no(new Error('الملف ليس صورة'));im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height));const w=Math.round(im.width*k),h=Math.round(im.height*k);const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.drawImage(im,0,0,w,h);let out=c.toDataURL('image/png');if(out.length>40000){x.fillStyle='#fff';x.fillRect(0,0,w,h);x.drawImage(im,0,0,w,h);let q=.85;do{out=c.toDataURL('image/jpeg',q);q-=.12}while(out.length>40000&&q>.2)}ok(out)};im.src=fr.result};fr.readAsDataURL(file)})}
+
+/* ---------- API ---------- */
+const API={token:null,call(action,data){return new Promise((ok,no)=>{
+ const payload=JSON.stringify({action,token:this.token,data:data||{}});
+ const fail=m=>{const e=new Error(m);if(m==='AUTH'){this.token=null;try{localStorage.removeItem('ctk')}catch(_){}if(S.user){S.user=null;showLogin();toast('انتهت الجلسة، سجّل الدخول من جديد','err')}}no(e)};
+ const done=r=>{if(typeof r==='string'){try{r=JSON.parse(r)}catch(_){return fail('رد غير صالح من الخادم')}}r&&r.error?fail(r.error):ok(r)};
+ if(window.google&&google.script&&google.script.run){google.script.run.withSuccessHandler(done).withFailureHandler(e=>fail((e&&e.message)||'خطأ في الخادم')).handle(payload)}
+ else fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:payload}).then(r=>r.json()).then(done).catch(()=>fail('تعذر الاتصال بالخادم'))
+})}};
+
+/* ---------- session ---------- */
+function brand(){document.title=S.settings.name;const lg=S.settings.logo;const inner=lg?`<img src="${E(lg)}" alt="">`:'📑';$('#hlogo').innerHTML=inner;$('#hname').textContent=S.settings.name;$('.lg-logo').innerHTML=inner;$('.lg-name').textContent=S.settings.name}
+function showLogin(){$('#app').hidden=true;$('#login').hidden=false;$('#lp').value='';$('#lerr').textContent=''}
+async function reload(){const r=await API.call('bootstrap');S.settings=Object.assign({units:[],wa_phone:''},r.settings);S.contracts=r.contracts||[];S.history=r.history||[];S.users=r.users||[];S.user=r.me;brand();$('#uchip').innerHTML=`${S.user.photo?`<img src="${E(S.user.photo)}">`:'<span class="av">👤</span>'}<span>${E(S.user.full_name)}</span>`}
+async function enter(){await reload();$('#login').hidden=true;$('#app').hidden=false;buildNav();const h=location.hash.slice(1);const first=NAV.find(n=>can(n[0]+'.view'));go(NAV.some(n=>n[0]===h&&can(n[0]+'.view'))?h:(first?first[0]:null))}
+function buildNav(){$('#nav').innerHTML=NAV.filter(n=>can(n[0]+'.view')).map(n=>`<a data-go="${n[0]}"><span>${n[2]}</span>${n[1]}</a>`).join('')}
+function go(k){destroyCharts();BLK={};const vw=$('#view');vw.onclick=null;vw.onchange=null;if(!k){$('#view').innerHTML='<div class="empty">لا توجد شاشات مسموحة لهذا المستخدم. راجع مدير النظام.</div>';return}cur=k;try{history.replaceState(null,'','#'+k)}catch(_){}$$('#nav a').forEach(a=>a.classList.toggle('on',a.dataset.go===k));$('#nav').classList.remove('open');({dashboard:vDash,contracts:vContracts,follow:vFollow,reports:vReports,users:vUsers,settings:vSettings})[k]()}
+const rerender=()=>go(cur);
+
+/* ---------- blocks / tools ---------- */
+function regBlock(id,b){BLK[id]=b}
+function toolsHtml(id,title){const sc=cur;const ta=title?` data-title="${E(title)}"`:'';let h='';if(can(sc+'.print'))h+=`<button class="btn sm" data-tool="print" data-b="${id}"${ta} title="طباعة">🖨️</button>`;if(can(sc+'.export'))h+=`<button class="btn sm" data-tool="pdf" data-b="${id}"${ta} title="تصدير PDF">📕</button><button class="btn sm" data-tool="xls" data-b="${id}"${ta} title="تصدير Excel">📗</button>`;if(can(sc+'.whatsapp'))h+=`<button class="btn sm" data-tool="wa" data-b="${id}"${ta} title="إرسال واتس">💬</button>`;return h?`<span class="tools">${h}</span>`:''}
+const rawCell=v=>typeof v==='number'?v:String(v==null?'':v);
+function tableHtml(d){return `<table><thead><tr>${d.head.map(h=>`<th>${E(h)}</th>`).join('')}</tr></thead><tbody>${d.rows.map(r=>`<tr>${r.map(v=>`<td>${typeof v==='number'?fnum(v):E(v)}</td>`).join('')}</tr>`).join('')}</tbody></table>`}
+const PCSS=`.pdoc{font-family:Cairo,Tahoma,Arial,sans-serif;direction:rtl;color:#111;background:#fff;padding:8px}.pdoc .ph{display:flex;align-items:center;gap:14px;border-bottom:3px solid #3b6cff;padding-bottom:8px;margin-bottom:12px}.pdoc .ph img{height:56px;max-width:120px;object-fit:contain}.pdoc h1{margin:0;font-size:20px}.pdoc h2{margin:2px 0 0;font-size:15px;color:#3b6cff}.pdoc .pm{margin-inline-start:auto;font-size:11px;color:#555;text-align:left;direction:ltr}.pdoc h3{font-size:14px;margin:12px 0 4px;border-inline-start:4px solid #3b6cff;padding-inline-start:8px}.pdoc table{width:100%;border-collapse:collapse;font-size:11px;margin:4px 0 12px}.pdoc th,.pdoc td{border:1px solid #bbb;padding:4px 6px;text-align:right}.pdoc th{background:#e6ecff}.pdoc tr{break-inside:avoid}.pdoc thead{display:table-header-group}.pdoc .pc{width:100%;max-height:340px;object-fit:contain}.pdoc section{margin-bottom:6px}`;
+function chartImg(id){const b=CH[id];if(!b)return'';const cv=document.createElement('canvas');cv.width=1000;cv.height=420;const w=document.createElement('div');w.style.cssText='position:fixed;left:-9999px;top:0;width:1000px;height:420px';w.appendChild(cv);document.body.appendChild(w);let img='';try{const cfg=b(false);const c=new Chart(cv,cfg);img=cv.toDataURL('image/png');c.destroy()}catch(e){}w.remove();return img}
+function docBody(ids,title){const bl=ids.map(i=>BLK[i]).filter(Boolean);let h=`<div class="pdoc"><style>${PCSS}</style><div class="ph">${S.settings.logo?`<img src="${E(S.settings.logo)}">`:''}<div><h1>${E(S.settings.name)}</h1><h2>${E(title)}</h2></div><div class="pm">${new Date().toLocaleString('en-GB')}<br>${E(S.user.full_name)}</div></div>`;for(const b of bl){h+=`<section><h3>${E(b.title)}</h3>`;if(b.chart){const im=chartImg(b.chart);if(im)h+=`<img class="pc" src="${im}">`}const d=b.data&&b.data();if(d&&d.rows.length)h+=tableHtml(d);h+='</section>'}return h+'</div>'}
+function printWin(body,title){const f=document.createElement('iframe');f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';document.body.appendChild(f);const d=f.contentDocument;d.open();d.write(`<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${E(title)}</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet"><style>@page{size:A4 landscape;margin:10mm}body{margin:0}</style></head><body>${body}</body></html>`);d.close();setTimeout(()=>{try{f.contentWindow.focus();f.contentWindow.print()}catch(e){toast('تعذرت الطباعة من هذا المتصفح','err')}setTimeout(()=>f.remove(),3000)},700)}
+async function pdfDoc(body,name){if(typeof html2pdf==='undefined'){toast('مكتبة PDF غير محمّلة، استخدم الطباعة ثم احفظ كـ PDF','err');return}const w=document.createElement('div');w.style.cssText='position:absolute;left:-12000px;top:0;width:1100px;background:#fff';w.innerHTML=body;document.body.appendChild(w);try{toast('جاري تجهيز ملف PDF...');await html2pdf().set({margin:8,filename:name+'.pdf',image:{type:'jpeg',quality:.96},html2canvas:{scale:2,backgroundColor:'#ffffff',windowWidth:1100},jsPDF:{unit:'mm',format:'a4',orientation:'landscape'},pagebreak:{mode:['css','legacy'],avoid:['tr','img']}}).from(w).save()}catch(e){toast('فشل إنشاء PDF، جرّب الطباعة','err')}finally{w.remove()}}
+function xlsDoc(ids,name){if(typeof XLSX==='undefined'){toast('مكتبة Excel غير محمّلة','err');return}const wb=XLSX.utils.book_new();const used=new Set();ids.map(i=>BLK[i]).filter(Boolean).forEach(b=>{const d=b.data();if(!d)return;const ws=XLSX.utils.aoa_to_sheet([d.head,...d.rows]);ws['!cols']=d.head.map(()=>({wch:20}));let n=b.title.replace(/[\\\/\?\*\[\]:]/g,' ').slice(0,28)||'ورقة';let k=n,i=2;while(used.has(k))k=n.slice(0,25)+' '+(i++);used.add(k);XLSX.utils.book_append_sheet(wb,ws,k)});wb.Workbook={Views:[{RTL:true}]};XLSX.writeFile(wb,name+'.xlsx')}
+function waText(ids,title){let t=`*${S.settings.name}*\n${title}\n${new Date().toLocaleString('en-GB')}\n`;ids.map(i=>BLK[i]).filter(Boolean).forEach(b=>{const d=b.data();if(!d)return;t+=`\n*${b.title}*\n`;if(b.kind==='kpi'||b.kind==='chart'){d.rows.slice(0,25).forEach(r=>{t+=`• ${r[0]}: ${r.slice(1).map(v=>typeof v==='number'?fnum(v):v).join(' | ')}\n`})}else{t+=`عدد السجلات: ${d.rows.length}\n`;d.rows.slice(0,15).forEach(r=>{t+='• '+r.slice(0,5).map(v=>typeof v==='number'?fnum(v):v).join(' | ')+'\n'});if(d.rows.length>15)t+=`... و ${d.rows.length-15} سجل آخر (راجع الملف المصدّر)\n`}});return t}
+function waModal(text){const m=modal('إرسال عبر واتساب',`<div class="fg"><label class="full">رقم الهاتف بصيغة دولية بدون + (مثال: 201001234567) — اتركه فارغاً لاختيار جهة الاتصال من واتساب<input id="wph" value="${E(S.settings.wa_phone||'')}" dir="ltr"></label><label class="full">نص الرسالة<textarea id="wtx" rows="10"></textarea></label></div><p class="mut">واتساب لا يسمح بإرفاق ملفات تلقائياً من رابط. لإرسال ملف: صدّر PDF أو Excel ثم أرفقه يدوياً في المحادثة.</p><div class="fa"><button class="btn pri" id="wgo">فتح واتساب</button></div>`,{wide:false});$('#wtx',m.el).value=text;$('#wgo',m.el).onclick=()=>{let p=$('#wph',m.el).value.replace(/\D/g,'');if(p.startsWith('00'))p=p.slice(2);else if(p.startsWith('0')&&p.length===11)p='2'+p;window.open(`https://wa.me/${p}?text=${encodeURIComponent($('#wtx',m.el).value)}`,'_blank');m.close()}}
+function screenTitle(){const t=NAV.find(n=>n[0]===cur)[1];return cur==='reports'?`${t} - ${(REPS.find(r=>r[1]===RP.t)||[])[2]||''}`:t}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-tool]');if(!b)return;const tool=b.dataset.tool,id=b.dataset.b;const ids=id==='*'?Object.keys(BLK).filter(k=>!BLK[k].modal):id.split(',');if(!ids.length||!BLK[ids[0]]){toast('لا توجد بيانات للتصدير','err');return}const title=b.dataset.title||(id==='*'?screenTitle():BLK[ids[0]].title);const fname=(S.settings.name+' - '+title).replace(/[\\\/:*?"<>|]/g,'-')+' '+today();
+ if(tool==='print')printWin(docBody(ids,title),title);else if(tool==='pdf')pdfDoc(docBody(ids,title),fname);else if(tool==='xls')xlsDoc(ids,fname);else if(tool==='wa')waModal(waText(ids,title))});
+const screenTools=()=>{const t=toolsHtml('*');return t};
+
+/* ---------- data table ---------- */
+let DTC=0;
+class DT{
+ constructor(o){this.o=o;this.uid=++DTC;this.col={};this.q='';this.sort=null;this.lim=150}
+ cells(r){return this.o.cols.map(c=>String(c.get?c.get(r):(r[c.k]==null?'':r[c.k])))}
+ get rows(){let rs=this.o.rows();const q=this.q.trim().toLowerCase();if(q)rs=rs.filter(r=>this.cells(r).some(v=>v.toLowerCase().includes(q)));for(const [i,v] of Object.entries(this.col)){const t=v.trim().toLowerCase();if(t)rs=rs.filter(r=>this.cells(r)[i].toLowerCase().includes(t))}
+  if(this.sort){const {i,d}=this.sort,c=this.o.cols[i];rs=[...rs].sort((a,b)=>{const x=c.num?num(a[c.k]):this.cells(a)[i],y=c.num?num(b[c.k]):this.cells(b)[i];return(c.num?x-y:String(x).localeCompare(String(y),'ar'))*d})}return rs}
+ data(){const rs=this.rows;return{head:this.o.cols.map(c=>c.t),rows:rs.map(r=>this.o.cols.map(c=>c.num?num(r[c.k]):String(c.get?c.get(r):(r[c.k]==null?'':r[c.k]))))}}
+ mount(host){this.host=host;const cs=this.o.cols,ac=!!this.o.actions;host.innerHTML=`<div class="tw"><table class="dt"><thead><tr>${cs.map((c,i)=>`<th data-s="${i}">${E(c.t)} <i class="si"></i></th>`).join('')}${ac?'<th class="ac"></th>':''}</tr><tr class="fr">${cs.map((c,i)=>`<th><input data-f="${i}" placeholder="بحث..." ${c.date?`list="dl${this.uid}_${i}"`:''}>${c.date?`<datalist id="dl${this.uid}_${i}">${[...new Set(this.o.rows().map(r=>String(r[c.k]||'')).filter(Boolean))].sort().reverse().map(v=>`<option value="${E(v)}">`).join('')}</datalist>`:''}</th>`).join('')}${ac?'<th></th>':''}</tr></thead><tbody></tbody><tfoot></tfoot></table></div><div class="tmore"></div>`;
+  $$('[data-f]',host).forEach(inp=>inp.addEventListener('input',()=>{this.col[inp.dataset.f]=inp.value;this.lim=150;this.body()}));
+  $$('[data-s]',host).forEach(th=>th.addEventListener('click',()=>{const i=+th.dataset.s;this.sort=this.sort&&this.sort.i===i?{i,d:-this.sort.d}:{i,d:1};this.body()}));
+  host.addEventListener('change',e=>{const s=e.target.closest('[data-sid]');if(s&&this.o.onChange)this.o.onChange(s.dataset.sid,s.value)});host.addEventListener('click',e=>{const a=e.target.closest('[data-a]');if(a&&this.o.onAct)this.o.onAct(a.dataset.a,a.dataset.id);if(e.target.closest('[data-more]')){this.lim+=300;this.body()}});this.body()}
+ body(){const cs=this.o.cols,rs=this.rows,h=this.host;if(!h)return;const show=rs.slice(0,this.lim);
+  $('tbody',h).innerHTML=show.length?show.map(r=>`<tr>${cs.map(c=>{const raw=c.get?c.get(r):r[c.k];const cls=(c.num?'n ':'')+(c.cls?c.cls(r):'');return `<td class="${cls}">${c.html?c.html(r):(c.date&&raw?`<span class="dlink" data-dts="${r.contract_id||r.id}" title="عرض قائمة تواريخ العقد">${E(raw)}</span>`:(c.num?fnum(raw):E(raw)))}</td>`}).join('')}${this.o.actions?`<td class="ac">${this.o.actions(r)}</td>`:''}</tr>`).join(''):`<tr><td colspan="${cs.length+1}" class="empty">لا توجد بيانات مطابقة</td></tr>`;
+  const sm=cs.some(c=>c.sum);$('tfoot',h).innerHTML=sm?`<tr>${cs.map((c,i)=>`<td>${c.sum?fnum(sum(rs,c.k)):(i===0?`الإجمالي (${rs.length})`:'')}</td>`).join('')}${this.o.actions?'<td></td>':''}</tr>`:'';
+  $$('thead th[data-s]',h).forEach(th=>{const i=+th.dataset.s;$('.si',th).textContent=this.sort&&this.sort.i===i?(this.sort.d>0?'▲':'▼'):''});
+  $('.tmore',h).innerHTML=rs.length>this.lim?`<button class="btn" data-more>عرض المزيد (${rs.length-this.lim})</button>`:`<span class="mut">عدد السجلات: ${rs.length}</span>`}
+}
+function regTable(id,title,dt){regBlock(id,{title,kind:'table',data:()=>dt.data()})}
+
+/* ---------- charts ---------- */
+function destroyCharts(){Object.values(INST).forEach(c=>{try{c.destroy()}catch(_){}});INST={};CH={}}
+const TH=d=>({tx:'#000',gr:d?'rgba(0,0,0,.1)':'#e2e2e2'});
+function axes(d,stacked){const t=TH(d);return{x:{stacked,ticks:{color:t.tx,font:{family:'Cairo'}},grid:{color:t.gr}},y:{stacked,beginAtZero:true,ticks:{color:t.tx,precision:0},grid:{color:t.gr}}}}
+function opts(d,o={}){const t=TH(d);return Object.assign({responsive:d,maintainAspectRatio:false,animation:d?{duration:1000,easing:'easeOutQuart'}:false,plugins:{legend:{rtl:true,labels:{color:t.tx,font:{family:'Cairo'},boxWidth:14}}}},o)}
+function defChart(id,title,build,onClick){CH[id]=build;regBlock(id,{title,kind:'chart',chart:id,data:()=>{const c=build(true).data;return{head:['البند',...c.datasets.map(x=>x.label||'القيمة')],rows:c.labels.map((l,i)=>[l,...c.datasets.map(x=>num(x.data[i]))])}}});return {id,onClick}}
+function mountChart(c){const cv=document.getElementById(c.id);if(!cv)return;const cfg=CH[c.id](true);if(c.onClick){cfg.options.onClick=(e,els)=>{if(els.length)c.onClick(els[0].index,els[0].datasetIndex)};cfg.options.onHover=(e,els)=>{e.native.target.style.cursor=els.length?'pointer':'default'}}INST[c.id]=new Chart(cv,cfg)}
+const chartBox=(id,title)=>`<div class="panel"><h3>${title} ${toolsHtml(id)}</h3><div class="cbox"><canvas id="${id}"></canvas></div></div>`;
+/* chart builders take a rows getter */
+function bStage(gr){return d=>{const rs=gr();return{type:'doughnut',data:{labels:STAGES,datasets:[{label:'عدد العقود',data:STAGES.map(s=>rs.filter(r=>sIdx(r.stage)===STAGES.indexOf(s)).length),backgroundColor:SC.map(c=>c+(d?'cc':'ff')),borderColor:'#fff',borderWidth:2}]},options:opts(d,{cutout:'58%'})}}}
+function bUnitStage(gr){return d=>{const rs=gr(),us=[...new Set(rs.map(r=>r.unit||'بدون وحدة'))];return{type:'bar',data:{labels:us,datasets:STAGES.map((s,i)=>({label:s,backgroundColor:SC[i],data:us.map(u=>rs.filter(r=>(r.unit||'بدون وحدة')===u&&sIdx(r.stage)===i).length),borderRadius:4}))},options:opts(d,{scales:axes(d,true)})}}}
+function bUnitQty(gr){return d=>{const rs=gr(),us=[...new Set(rs.map(r=>r.unit||'بدون وحدة'))],by=u=>rs.filter(r=>(r.unit||'بدون وحدة')===u);return{type:'bar',data:{labels:us,datasets:[['العدد','qty','#4f8cff'],['المطلوب تنفيذه','required','#ffb020'],['الرصيد المتاح','balance','#2de2a6']].map(([l,k,c])=>({label:l,backgroundColor:c,data:us.map(u=>sum(by(u),k)),borderRadius:5}))},options:opts(d,{scales:axes(d,false)})}}}
+function bGroupStage(gr,kf){return d=>{const rs=gr(),us=[...new Set(rs.map(kf))];return{type:'bar',data:{labels:us,datasets:STAGES.map((s,i)=>({label:s,backgroundColor:SC[i],data:us.map(u=>rs.filter(r=>kf(r)===u&&sIdx(r.stage)===i).length),borderRadius:4}))},options:opts(d,{scales:axes(d,true)})}}}
+function bGroupQty(gr,kf){return d=>{const rs=gr(),us=[...new Set(rs.map(kf))],by=u=>rs.filter(r=>kf(r)===u);return{type:'bar',data:{labels:us,datasets:[['العدد','qty','#4f8cff'],['المطلوب تنفيذه','required','#ffb020'],['الرصيد المتاح','balance','#2de2a6']].map(([l,k,c])=>({label:l,backgroundColor:c,data:us.map(u=>sum(by(u),k)),borderRadius:5}))},options:opts(d,{scales:axes(d,false)})}}}
+function bMonth(gr){return d=>{const rs=gr(),ms=new Set();rs.forEach(r=>{if(r.created_at)ms.add(r.created_at.slice(0,7));if(r.delivery_date)ms.add(r.delivery_date.slice(0,7))});const L=[...ms].sort();return{type:'line',data:{labels:L,datasets:[{label:'عقود مضافة',borderColor:'#4f8cff',backgroundColor:'rgba(79,140,255,.2)',fill:true,tension:.35,data:L.map(m=>rs.filter(r=>(r.created_at||'').slice(0,7)===m).length)},{label:'عقود مطلوب تسليمها',borderColor:'#ff5fa2',backgroundColor:'rgba(255,95,162,.15)',fill:true,tension:.35,data:L.map(m=>rs.filter(r=>(r.delivery_date||'').slice(0,7)===m).length)}]},options:opts(d,{scales:axes(d,false)})}}}
+function bUnitProg(gr){return d=>{const rs=gr(),us=[...new Set(rs.map(r=>r.unit||'بدون وحدة'))];return{type:'bar',data:{labels:us,datasets:[{label:'متوسط الإنجاز %',backgroundColor:us.map((_,i)=>SC[(i%5)+1]),borderRadius:6,data:us.map(u=>{const x=rs.filter(r=>(r.unit||'بدون وحدة')===u);return x.length?Math.round(x.reduce((a,r)=>a+prog(r),0)/x.length):0})}]},options:opts(d,{indexAxis:'y',scales:Object.assign(axes(d,false),{x:{max:100,beginAtZero:true,ticks:{color:TH(d).tx},grid:{color:TH(d).gr}}})})}}}
+
+/* ---------- KPI cards ---------- */
+function countUp(el){const to=num(el.dataset.to),dec=to%1?1:0,t0=performance.now(),dur=900;const f=t=>{const p=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-p,3);el.textContent=(to*e).toLocaleString('en-US',{maximumFractionDigits:dec})+(el.dataset.sx||'');if(p<1)requestAnimationFrame(f)};requestAnimationFrame(f)}
+function kpiHtml(items,i0=0){return items.map((k,i)=>`<div class="kpi ${k.on?'on':''}" style="--c:${k.c};--i:${i0+i}" data-k="${k.id}"><span class="ic">${k.i||''}</span><div class="l">${E(k.l)}</div><div class="v" data-to="${num(k.v)}" data-sx="${k.sx||''}">0</div>${k.s?`<div class="s">${E(k.s)}</div>`:''}${k.bar!=null?`<div class="bar"><i style="width:${Math.min(100,k.bar)}%"></i></div>`:''}</div>`).join('')}
+const animateKpis=r=>$$('[data-to]',r).forEach(countUp);
+function kpiBlock(id,title,items){regBlock(id,{title,kind:'kpi',data:()=>({head:['المؤشر','القيمة'],rows:items.map(k=>[k.l,num(k.v)])})})}
+function drill(title,rows){const dt=new DT({rows:()=>rows,cols:cCols.slice(0,12)});const m=modal(`${title} (${rows.length})`,'<div id="dh"></div>',{wide:true});dt.mount($('#dh',m.el))}
+function metrics(rs){return{total:rs.length,qty:sum(rs,'qty'),req:sum(rs,'required'),bal:sum(rs,'balance'),prog:rs.length?Math.round(rs.reduce((a,r)=>a+prog(r),0)/rs.length*10)/10:0,late:rs.filter(isLate),due:rs.filter(isDue)}}
+
+/* ---------- dashboard ---------- */
+let DF={unit:'',stage:'',by:'created_at',from:'',to:''};
+function dBase(){return S.contracts.filter(r=>(!DF.unit||r.unit===DF.unit)&&(!DF.from||(r[DF.by]||'')>=DF.from)&&(!DF.to||(r[DF.by]||'')<=DF.to))}
+function dRows(){return dBase().filter(r=>!DF.stage||r.stage===DF.stage)}
+function vDash(){
+ const base=dBase(),rows=dRows(),m=metrics(rows),t=today(),ids=new Set(rows.map(r=>String(r.id)));
+ const mv=S.history.filter(h=>h.stage_date===t&&ids.has(String(h.contract_id)));
+ const mvRows=rows.filter(r=>mv.some(h=>String(h.contract_id)===String(r.id)));
+ const main=[
+  {id:'total',l:'إجمالي العقود',v:m.total,c:'#4f8cff',i:'📄',rows:rows},
+  {id:'qty',l:'إجمالي العدد',v:m.qty,c:'#19c3ff',i:'🔢',rows:rows},
+  {id:'req',l:'المطلوب تنفيذه',v:m.req,c:'#ffb020',i:'🎯',rows:rows},
+  {id:'bal',l:'الرصيد المتاح',v:m.bal,c:'#2de2a6',i:'📦',rows:rows},
+  {id:'prog',l:'متوسط نسبة الإنجاز',v:m.prog,sx:'%',c:'#b36bff',i:'📈',bar:m.prog,rows:rows},
+  {id:'late',l:'عقود متأخرة',v:m.late.length,c:'#ff4d6d',i:'⏰',rows:m.late,s:'تجاوزت تاريخ التسليم'},
+  {id:'due',l:'تسليم خلال 7 أيام',v:m.due.length,c:'#ff8a3d',i:'📅',rows:m.due},
+  {id:'today',l:'حركات اليوم',v:mv.length,c:'#5eead4',i:'⚡',rows:mvRows,s:'تغيير مراحل اليوم'}
+ ];
+ const tot=base.length||1,sti=STAGES.map((s,i)=>{const n=base.filter(r=>r.stage===s||(i===0&&!r.stage)).length;return{id:'st'+i,l:i===0?'غير محدد (--)':s,v:n,c:SC[i],i:['❔','🏭','✅','🔍','📥','🧾','🤝'][i],s:Math.round(n/tot*100)+'% من العقود',bar:n/tot*100,on:DF.stage===s,stage:s,rows:base.filter(r=>r.stage===s)}});
+ const un=allUnits(),canK=can('dashboard.kpi'),canC=can('dashboard.charts');
+ let h=`<div class="vh"><h2>📊 الشاشة الرئيسية</h2><div class="tb">${screenTools()}</div></div>
+ <div class="panel"><div class="fb">
+  <label>الوحدة الإنتاجية<select id="dfu"><option value="">الكل</option>${un.map(u=>`<option ${DF.unit===u?'selected':''}>${E(u)}</option>`).join('')}</select></label>
+  <label>التاريخ حسب<select id="dfb">${DATE_FIELDS.map(([k,t])=>`<option value="${k}" ${DF.by===k?'selected':''}>${t}</option>`).join('')}</select></label>
+  <label>من<input type="date" id="dff" value="${DF.from}"></label><label>إلى<input type="date" id="dft" value="${DF.to}"></label>
+  <button class="btn" id="dfr">↺ إعادة ضبط</button>${DF.stage?`<span class="chip" id="dfs">المرحلة: ${E(DF.stage)} ✕</span>`:''}
+ </div></div>`;
+ if(canK){h+=`<div class="panel"><h3>🌟 مؤشرات الأداء الرئيسية ${toolsHtml('kpis')}</h3><div class="grid g4">${kpiHtml(main)}</div></div>
+ <div class="panel"><h3>🧭 مسار مراحل الإنتاج (اضغط على مرحلة للتصفية) ${toolsHtml('stk')}</h3><div class="pipe">${sti.map((s,i)=>`<div class="seg ${s.on?'on':''}" style="--c:${s.c};animation-delay:${i*70}ms" data-st="${i}"><b data-to="${s.v}">0</b><span>${E(s.l)}</span></div>`).join('')}</div>
+ <div class="grid g7" style="margin-top:14px">${kpiHtml(sti,8)}</div></div>`;kpiBlock('kpis','مؤشرات الأداء الرئيسية',main);kpiBlock('stk','عدد العقود لكل مرحلة',sti)}
+ if(canC){h+=`<div class="grid g2">${chartBox('c_stage','توزيع العقود حسب مرحلة الإنتاج')}${chartBox('c_us','العقود حسب الوحدة الإنتاجية والمرحلة')}${chartBox('c_uq','العدد والمطلوب والرصيد لكل وحدة')}${chartBox('c_up','متوسط نسبة الإنجاز لكل وحدة')}</div>${chartBox('c_m','الحركة الشهرية للعقود')}`}
+ if(!canK&&!canC)h+='<div class="empty">لا توجد أقسام مسموحة في هذه الشاشة.</div>';
+ const v=$('#view');v.innerHTML=h;
+ if(canC){const stRows=()=>base;[defChart('c_stage','توزيع العقود حسب مرحلة الإنتاج',bStage(stRows),i=>{DF.stage=DF.stage===STAGES[i]?'':STAGES[i];vDash()}),defChart('c_us','العقود حسب الوحدة الإنتاجية والمرحلة',bUnitStage(()=>rows),(i)=>{const u=CH.c_us(true).data.labels[i];DF.unit=DF.unit===u?'':u;vDash()}),defChart('c_uq','العدد والمطلوب والرصيد لكل وحدة',bUnitQty(()=>rows),i=>{const u=CH.c_uq(true).data.labels[i];DF.unit=DF.unit===u?'':u;vDash()}),defChart('c_up','متوسط نسبة الإنجاز لكل وحدة',bUnitProg(()=>rows),null),defChart('c_m','الحركة الشهرية للعقود',bMonth(()=>rows),null)].forEach(mountChart)}
+ animateKpis(v);
+ v.onchange=e=>{const t=e.target;if(t.id==='dfu')DF.unit=t.value;else if(t.id==='dfb')DF.by=t.value;else if(t.id==='dff')DF.from=t.value;else if(t.id==='dft')DF.to=t.value;else return;vDash()};
+ v.onclick=e=>{if(e.target.closest('[data-tool]'))return;if(e.target.closest('#dfr')){DF={unit:'',stage:'',by:'created_at',from:'',to:''};return vDash()}if(e.target.closest('#dfs')){DF.stage='';return vDash()}
+  const sg=e.target.closest('[data-st]');if(sg){const s=STAGES[+sg.dataset.st];DF.stage=DF.stage===s?'':s;return vDash()}
+  const k=e.target.closest('.kpi');if(k){const all=[...main,...sti],it=all.find(x=>x.id===k.dataset.k);if(!it)return;if(it.stage!==undefined){DF.stage=DF.stage===it.stage?'':it.stage;vDash()}else drill(it.l,it.rows)}}
+}
+
+/* ---------- contracts ---------- */
+const cCols=[
+ {k:'created_at',t:'تاريخ الإضافة',date:true},ctrCol,prjCol,{k:'description',t:'البيان'},
+ {k:'qty',t:'العدد',num:true,sum:true},{k:'balance',t:'الرصيد المتاح',num:true,sum:true},{k:'required',t:'المطلوب تنفيذه',num:true,sum:true},
+ {k:'unit',t:'الوحدة الإنتاجية'},{k:'receive_date',t:'تاريخ استلام العقد',date:true},{k:'delivery_date',t:'تاريخ تسليم العقد',cls:r=>isLate(r)?'late':'',date:true},
+ {k:'stage',t:'مرحلة الإنتاج',html:r=>badge(r.stage)},{k:'stage_date',t:'تاريخ تغيير المرحلة',date:true},{k:'created_by',t:'أضيف بواسطة'},{k:'updated_by',t:'آخر تعديل بواسطة'},{k:'updated_at',t:'وقت آخر تعديل'}];
+const stSel=r=>{const c=SC[sIdx(r.stage)];return `<select class="stsel" data-sid="${r.id}" style="border-color:${c};box-shadow:0 0 8px -2px ${c}">${STAGES.map(s=>`<option ${s===(r.stage||'--')?'selected':''}>${E(s)}</option>`).join('')}</select>`};
+function selOpts(list,v,blank){return(blank?`<option value="">${blank}</option>`:'')+list.map(x=>`<option ${x===v?'selected':''}>${E(x)}</option>`).join('')}
+function vContracts(){
+ let fu='',fs='',fp='';
+ const dt=new DT({cols:cCols.map(c=>c.k==='stage'&&can('contracts.stage')?Object.assign({},c,{html:stSel}):c),onChange:(id,val)=>{act(()=>API.call('changeStage',{id,stage:val}).then(()=>{toast('تم تغيير المرحلة، وسُجّل تاريخ اليوم واسمك تلقائياً');return reload()})).then(()=>dt.body())},rows:()=>S.contracts.filter(r=>(!fu||r.unit===fu)&&(!fs||r.stage===fs)&&(!fp||(r.project_name||'')===fp)),
+  actions:r=>`<button class="btn sm" data-a="tl" data-id="${r.id}" title="سجل المراحل">🕘</button>${can('contracts.stage')?`<button class="btn sm" data-a="st" data-id="${r.id}" title="تغيير المرحلة">🔁</button>`:''}${can('contracts.edit')?`<button class="btn sm" data-a="ed" data-id="${r.id}" title="تعديل">✏️</button>`:''}${can('contracts.delete')?`<button class="btn sm bad" data-a="del" data-id="${r.id}" title="حذف">🗑</button>`:''}`,
+  onAct:async(a,id)=>{const r=S.contracts.find(x=>String(x.id)===String(id));if(!r)return;if(a==='ed')contractForm(r);else if(a==='st')stageForm(r);else if(a==='tl')timeline(r);else if(a==='del'&&await confirmBox(`حذف العقد ${r.contract_no} نهائياً؟`))act(async()=>{await API.call('deleteContract',{id:r.id});toast('تم الحذف');await reload();rerender()})}});
+ $('#view').innerHTML=`<div class="vh"><h2>📄 العقود</h2><div class="tb"><input id="gq" placeholder="🔍 بحث في كل البنود..."><select id="fu">${selOpts(allUnits(),'','كل الوحدات')}</select><select id="fp">${selOpts(allProjects(),'','كل المشروعات')}</select><select id="fs">${selOpts(STAGES,'','كل المراحل')}</select>${can('contracts.add')?'<button class="btn pri" id="add">＋ عقد جديد</button>':''}${screenTools()}</div></div><div class="panel" id="tbl"></div>`;
+ dt.mount($('#tbl'));regTable('t_contracts','بيانات العقود',dt);
+ $('#gq').oninput=e=>{dt.q=e.target.value;dt.lim=150;dt.body()};$('#fu').onchange=e=>{fu=e.target.value;dt.body()};$('#fp').onchange=e=>{fp=e.target.value;dt.body()};$('#fs').onchange=e=>{fs=e.target.value;dt.body()};
+ const ad=$('#add');if(ad)ad.onclick=()=>contractForm(null)}
+function contractForm(r){
+ const n=!r,v=r||{created_at:today(),contract_no:'',project_name:'',description:'',qty:'',balance:'',required:'',unit:'',receive_date:'',delivery_date:'',stage:'--',stage_date:today()};
+ const un=allUnits();
+ const m=modal(n?'إضافة عقد جديد':'تعديل العقد '+v.contract_no,`<form id="cf"><div class="fg">
+ <label>تاريخ الإضافة<input type="date" name="created_at" value="${E(v.created_at)}" disabled></label>
+ <label>رقم العقد *<input name="contract_no" value="${E(v.contract_no)}" required></label>
+ <label>اسم المشروع<input name="project_name" list="pl" value="${E(v.project_name||'')}"><datalist id="pl">${allProjects().map(u=>`<option value="${E(u)}">`).join('')}</datalist></label>
+ <label class="full">البيان<textarea name="description" rows="2">${E(v.description)}</textarea></label>
+ <label>العدد<input type="number" step="any" name="qty" value="${E(v.qty)}"></label>
+ <label>الرصيد المتاح<input type="number" step="any" name="balance" value="${E(v.balance)}"></label>
+ <label>المطلوب تنفيذه<input type="number" step="any" name="required" value="${E(v.required)}"></label>
+ <label>الوحدة الإنتاجية${S.user.is_admin?`<input name="unit" list="ul" value="${E(v.unit)}"><datalist id="ul">${un.map(u=>`<option value="${E(u)}">`).join('')}</datalist>`:`<select name="unit" required>${selOpts(S.user.units||[],v.unit,'— اختر —')}</select>`}</label>
+ <label>تاريخ استلام العقد<input type="date" name="receive_date" value="${E(v.receive_date)}"></label>
+ <label>تاريخ تسليم العقد<input type="date" name="delivery_date" value="${E(v.delivery_date)}"></label>
+ <label>مرحلة الإنتاج<select name="stage">${selOpts(STAGES,v.stage||'--')}</select></label>
+ <label>تاريخ تغيير المرحلة (تلقائي)<input type="date" name="stage_date" value="${E(v.stage_date||today())}" disabled></label>
+ </div><div class="fa"><button type="button" class="btn" data-c>إلغاء</button><button class="btn pri">${n?'إضافة':'حفظ'}</button></div></form>`,{wide:true,sticky:true});
+ const f=$('#cf',m.el);f.stage.onchange=()=>{f.stage_date.value=f.stage.value===v.stage?(v.stage_date||today()):today()};$('[data-c]',m.el).onclick=m.close;
+ f.onsubmit=e=>{e.preventDefault();const d=Object.fromEntries(new FormData(f));delete d.created_at;if(r)d.id=r.id;act(async()=>{await API.call('saveContract',d);m.close();toast('تم الحفظ');await reload();rerender()})}}
+function stageForm(r){const m=modal('تغيير مرحلة العقد '+r.contract_no,`<div class="fg"><label>المرحلة<select id="sg">${selOpts(STAGES,r.stage)}</select></label><label>تاريخ التغيير<input type="date" id="sd" value="${today()}"></label></div><div class="fa"><button class="btn" data-c>إلغاء</button><button class="btn pri" id="ok">حفظ</button></div>`,{sticky:true});$('[data-c]',m.el).onclick=m.close;$('#ok',m.el).onclick=()=>act(async()=>{await API.call('changeStage',{id:r.id,stage:$('#sg',m.el).value,date:$('#sd',m.el).value});m.close();toast('تم تغيير المرحلة');await reload();rerender()})}
+function timeline(r){const hs=S.history.filter(h=>String(h.contract_id)===String(r.id)).sort((a,b)=>(a.stage_date+String(a.id).padStart(9,'0')).localeCompare(b.stage_date+String(b.id).padStart(9,'0')));const m=modal('سجل مراحل العقد '+r.contract_no,hs.length?`<ul class="tl">${hs.map(h=>`<li style="--c:${SC[sIdx(h.stage)]}">${badge(h.stage)} <span class="mut">${E(h.stage_date)}</span> <span class="mut">— بواسطة ${E(h.changed_by||'')}</span></li>`).join('')}</ul>`:'<div class="empty">لا يوجد سجل لهذا العقد</div>')}
+
+/* ---------- follow-up ---------- */
+function vFollow(){
+ let fs='';
+ const cols=[{k:'created_at',t:'تاريخ الإضافة',date:true},ctrCol,prjCol,{k:'receive_date',t:'تاريخ استلام العقد',date:true},{k:'delivery_date',t:'تاريخ تسليم العقد',cls:r=>isLate(r)?'late':'',date:true},{k:'stage',t:'آخر مرحلة إنتاج',html:r=>badge(r.stage)},{k:'stage_date',t:'تاريخ المرحلة',date:true},{k:'updated_by',t:'آخر تعديل بواسطة'},
+  {k:'p',t:'نسبة الإنجاز',get:r=>prog(r)+'%',html:r=>`<span class="pg"><i style="width:${prog(r)}%"></i></span> ${prog(r)}%`},
+  {k:'left',t:'المتبقي للتسليم',get:r=>{if(r.stage===FINAL)return'مكتمل';if(!r.delivery_date)return'—';const d=Math.round((new Date(r.delivery_date)-new Date(today()))/864e5);return d<0?`متأخر ${-d} يوم`:`${d} يوم`},cls:r=>isLate(r)?'late':''}];
+ const dt=new DT({cols,rows:()=>S.contracts.filter(r=>!fs||r.stage===fs),actions:r=>`<button class="btn sm" data-a="tl" data-id="${r.id}">🕘 السجل</button>`,onAct:(a,id)=>{const r=S.contracts.find(x=>String(x.id)===String(id));if(r)timeline(r)}});
+ const cnt=STAGES.map((s,i)=>S.contracts.filter(r=>sIdx(r.stage)===i).length);
+ $('#view').innerHTML=`<div class="vh"><h2>🛰️ متابعة العقود</h2><div class="tb"><input id="gq" placeholder="🔍 بحث..."><select id="fs">${selOpts(STAGES,'','كل المراحل')}</select>${screenTools()}</div></div>
+ <div class="panel"><div class="pipe">${STAGES.map((s,i)=>`<div class="seg" style="--c:${SC[i]}" data-st="${i}"><b>${cnt[i]}</b><span>${E(s)}</span></div>`).join('')}</div></div><div class="panel" id="tbl"></div>`;
+ dt.mount($('#tbl'));regTable('t_follow','متابعة العقود',dt);
+ $('#gq').oninput=e=>{dt.q=e.target.value;dt.lim=150;dt.body()};$('#fs').onchange=e=>{fs=e.target.value;dt.body()};
+ $$('.seg').forEach(s=>s.onclick=()=>{const v=STAGES[+s.dataset.st];fs=fs===v?'':v;$('#fs').value=fs;dt.body()})}
+
+/* ---------- reports ---------- */
+const REPS=[['rep_contracts','contracts','تقارير العقود'],['rep_units','units','تقرير الوحدات'],['rep_projects','projects','تقرير المشروعات'],['rep_today','today','تقرير اليوم'],['rep_date','date','تقرير تاريخ محدد'],['rep_stages','stages','تقرير مراحل الإنتاج']];
+let RP={t:'contracts',q:'',no:'',unit:'',project:'',stage:'',by:'created_at',from:'',to:''};
+function rpBase(){const q=RP.q.trim().toLowerCase(),no=RP.no.trim().toLowerCase();return S.contracts.filter(r=>(!RP.unit||r.unit===RP.unit)&&(!RP.project||(r.project_name||'')===RP.project)&&(!RP.stage||r.stage===RP.stage)&&(!no||String(r.contract_no).toLowerCase().includes(no))&&(!q||Object.values(r).some(v=>String(v).toLowerCase().includes(q))))}
+function rpRows(){const b=rpBase();if(RP.t==='today'){const t=today();return b.filter(r=>r.created_at===t||r.stage_date===t)}return b.filter(r=>(!RP.from||(r[RP.by]||'')>=RP.from)&&(!RP.to||(r[RP.by]||'')<=RP.to))}
+function sumKpis(rs){const m=metrics(rs);return[{id:'a',l:'عدد العقود',v:m.total,c:'#4f8cff',i:'📄'},{id:'b',l:'إجمالي العدد',v:m.qty,c:'#19c3ff',i:'🔢'},{id:'c',l:'المطلوب تنفيذه',v:m.req,c:'#ffb020',i:'🎯'},{id:'d',l:'الرصيد المتاح',v:m.bal,c:'#2de2a6',i:'📦'},{id:'e',l:'متوسط الإنجاز',v:m.prog,sx:'%',c:'#b36bff',i:'📈'},{id:'f',l:'متأخرة',v:m.late.length,c:'#ff4d6d',i:'⏰'}]}
+function groupRows(rs,keyFn,keys){const g=groupBy(rs,keyFn);return(keys||[...g.keys()]).map(k=>{const x=g.get(k)||[];return Object.assign({key:k,count:x.length,qty:sum(x,'qty'),required:sum(x,'required'),balance:sum(x,'balance'),pg:x.length?Math.round(x.reduce((a,r)=>a+prog(r),0)/x.length):0},Object.fromEntries(STAGES.map((s,i)=>['s'+i,x.filter(r=>sIdx(r.stage)===i).length])))})}
+function vReports(){
+ const allowed=REPS.filter(r=>can('reports.'+r[0]));
+ if(!allowed.length){$('#view').innerHTML='<div class="vh"><h2>📑 التقارير</h2></div><div class="empty">لا توجد تقارير مسموحة لهذا المستخدم.</div>';return}
+ if(!allowed.some(r=>r[1]===RP.t))RP.t=allowed[0][1];
+ if(RP.t==='date'&&!RP.from&&!RP.to){RP.from=addDays(today(),-7);RP.to=today()}
+ const un=allUnits(),t=RP.t,rs=rpRows(),dateless=t==='today';
+ let h=`<div class="vh"><h2>📑 التقارير</h2><div class="tb">${screenTools()}</div></div><div class="tabs">${allowed.map(r=>`<button class="${r[1]===t?'on':''}" data-t="${r[1]}">${r[2]}</button>`).join('')}</div>
+ <div class="panel"><div class="fb"><label>بحث عام<input id="rq" value="${E(RP.q)}" placeholder="أي بند..."></label><label>رقم العقد<input id="rn" value="${E(RP.no)}"></label>
+ <label>الوحدة<select id="ru"><option value="">الكل</option>${un.map(u=>`<option ${RP.unit===u?'selected':''}>${E(u)}</option>`).join('')}</select></label>
+ <label>المشروع<select id="rp"><option value="">الكل</option>${allProjects().map(u=>`<option ${RP.project===u?'selected':''}>${E(u)}</option>`).join('')}</select></label>
+ <label>المرحلة<select id="rs"><option value="">الكل</option>${STAGES.map(s=>`<option ${RP.stage===s?'selected':''}>${E(s)}</option>`).join('')}</select></label>
+ ${dateless?'<label>التاريخ<input value="'+today()+'" disabled></label>':`<label>التاريخ حسب<select id="rb">${DATE_FIELDS.map(([k,x])=>`<option value="${k}" ${RP.by===k?'selected':''}>${x}</option>`).join('')}</select></label><label>من<input type="date" id="rf" value="${RP.from}"></label><label>إلى<input type="date" id="rt" value="${RP.to}"></label>`}
+ <button class="btn" id="rr">↺ مسح الفلاتر</button></div></div>`;
+ const kp=sumKpis(rs);h+=`<div class="panel"><h3>ملخص التقرير ${toolsHtml('rk')}</h3><div class="grid g4">${kpiHtml(kp)}</div></div>`;kpiBlock('rk','ملخص التقرير',kp);
+ const charts=[];let tables=[];
+ if(t==='contracts'||t==='date'){h+=`<div class="grid g2">${chartBox('r_c1','توزيع العقود حسب المرحلة')}${chartBox('r_c2','العقود حسب الوحدة والمرحلة')}</div>${t==='date'?chartBox('r_c3','الحركة الشهرية'):''}<div class="panel"><h3>${t==='date'?`عقود الفترة (${E(RP.from||'—')} إلى ${E(RP.to||'—')})`:'بيانات العقود'} ${toolsHtml('r_t')}</h3><div id="rt1"></div></div>`;
+  charts.push(defChart('r_c1','توزيع العقود حسب المرحلة',bStage(rpRows),null),defChart('r_c2','العقود حسب الوحدة والمرحلة',bUnitStage(rpRows),null));if(t==='date')charts.push(defChart('r_c3','الحركة الشهرية',bMonth(rpRows),null));
+  tables.push(['rt1','r_t','بيانات العقود',new DT({cols:cCols,rows:rpRows})])}
+ else if(t==='units'){const g=()=>groupRows(rpRows(),r=>r.unit||'بدون وحدة');h+=`<div class="grid g2">${chartBox('r_c1','العقود حسب الوحدة والمرحلة')}${chartBox('r_c2','العدد والمطلوب والرصيد لكل وحدة')}</div><div class="panel"><h3>ملخص الوحدات الإنتاجية ${toolsHtml('r_t')}</h3><div id="rt1"></div></div>`;
+  charts.push(defChart('r_c1','العقود حسب الوحدة والمرحلة',bUnitStage(rpRows),null),defChart('r_c2','العدد والمطلوب والرصيد لكل وحدة',bUnitQty(rpRows),null));
+  tables.push(['rt1','r_t','ملخص الوحدات',new DT({cols:[{k:'key',t:'الوحدة الإنتاجية'},{k:'count',t:'عدد العقود',num:true,sum:true},{k:'qty',t:'العدد',num:true,sum:true},{k:'required',t:'المطلوب تنفيذه',num:true,sum:true},{k:'balance',t:'الرصيد المتاح',num:true,sum:true},...STAGES.map((s,i)=>({k:'s'+i,t:s,num:true,sum:true})),{k:'pg',t:'متوسط الإنجاز %',num:true}],rows:g})])}
+ else if(t==='projects'){const pk=r=>r.project_name||'بدون مشروع';const g=()=>groupRows(rpRows(),pk);h+=`<div class="grid g2">${chartBox('r_c1','العقود حسب المشروع والمرحلة')}${chartBox('r_c2','العدد والمطلوب والرصيد لكل مشروع')}</div><div class="panel"><h3>ملخص المشروعات (اضغط على اسم المشروع للتقرير التفصيلي) ${toolsHtml('r_t')}</h3><div id="rt1"></div></div><div class="panel"><h3>عقود المشروعات ${toolsHtml('r_t2')}</h3><div id="rt2"></div></div>`;
+  charts.push(defChart('r_c1','العقود حسب المشروع والمرحلة',bGroupStage(rpRows,pk),null),defChart('r_c2','العدد والمطلوب والرصيد لكل مشروع',bGroupQty(rpRows,pk),null));
+  tables.push(['rt1','r_t','ملخص المشروعات',new DT({cols:[{k:'key',t:'اسم المشروع',html:r=>r.key==='بدون مشروع'?E(r.key):prjLink(r.key)},{k:'count',t:'عدد العقود',num:true,sum:true},{k:'qty',t:'العدد',num:true,sum:true},{k:'required',t:'المطلوب تنفيذه',num:true,sum:true},{k:'balance',t:'الرصيد المتاح',num:true,sum:true},...STAGES.map((s,i)=>({k:'s'+i,t:s,num:true,sum:true})),{k:'pg',t:'متوسط الإنجاز %',num:true}],rows:g})],['rt2','r_t2','عقود المشروعات',new DT({cols:cCols,rows:rpRows})])}
+ else if(t==='stages'){const g=()=>{const x=rpRows(),tt=x.length||1;return groupRows(x,r=>STAGES[sIdx(r.stage)],STAGES).map(o=>Object.assign(o,{pct:Math.round(o.count/tt*1000)/10}))};h+=`<div class="grid g2">${chartBox('r_c1','توزيع العقود حسب المرحلة')}${chartBox('r_c2','العقود حسب الوحدة والمرحلة')}</div><div class="panel"><h3>ملخص مراحل الإنتاج ${toolsHtml('r_t')}</h3><div id="rt1"></div></div><div class="panel"><h3>عقود كل مرحلة ${toolsHtml('r_t2')}</h3><div id="rt2"></div></div>`;
+  charts.push(defChart('r_c1','توزيع العقود حسب المرحلة',bStage(rpRows),null),defChart('r_c2','العقود حسب الوحدة والمرحلة',bUnitStage(rpRows),null));
+  tables.push(['rt1','r_t','ملخص المراحل',new DT({cols:[{k:'key',t:'المرحلة',html:r=>badge(r.key)},{k:'count',t:'عدد العقود',num:true,sum:true},{k:'pct',t:'النسبة %',num:true},{k:'qty',t:'العدد',num:true,sum:true},{k:'required',t:'المطلوب تنفيذه',num:true,sum:true},{k:'balance',t:'الرصيد المتاح',num:true,sum:true}],rows:g})]);
+  tables.push(['rt2','r_t2','تفاصيل العقود بالمراحل',new DT({cols:cCols,rows:rpRows})])}
+ else if(t==='today'){const tt=today(),b=rpBase(),cm=new Map(S.contracts.map(c=>[String(c.id),c]));const mv=()=>S.history.filter(x=>x.stage_date===tt&&(!RP.stage||x.stage===RP.stage)&&b.some(c=>String(c.id)===String(x.contract_id))).map(x=>{const c=cm.get(String(x.contract_id))||{};return Object.assign({},x,{unit:c.unit||'',project_name:c.project_name||'',description:c.description||''})});
+  const added=()=>b.filter(r=>r.created_at===tt);const due=()=>b.filter(r=>r.delivery_date===tt);
+  h+=`<div class="panel"><h3>🆕 عقود أُضيفت اليوم ${toolsHtml('r_t1')}</h3><div id="rt1"></div></div><div class="panel"><h3>🔁 حركة المراحل اليوم ${toolsHtml('r_t2')}</h3><div id="rt2"></div></div><div class="panel"><h3>📅 عقود موعد تسليمها اليوم ${toolsHtml('r_t3')}</h3><div id="rt3"></div></div>${chartBox('r_c1','حركة المراحل اليوم')}`;
+  tables.push(['rt1','r_t1','عقود أضيفت اليوم',new DT({cols:cCols,rows:added})],['rt2','r_t2','حركة المراحل اليوم',new DT({cols:[ctrCol,prjCol,{k:'unit',t:'الوحدة الإنتاجية'},{k:'description',t:'البيان'},{k:'stage',t:'المرحلة',html:r=>badge(r.stage)},{k:'stage_date',t:'تاريخ المرحلة'},{k:'changed_by',t:'بواسطة'}],rows:mv})],['rt3','r_t3','عقود موعد تسليمها اليوم',new DT({cols:cCols,rows:due})]);
+  charts.push(defChart('r_c1','حركة المراحل اليوم',d=>({type:'bar',data:{labels:STAGES,datasets:[{label:'عدد الحركات',backgroundColor:SC,borderRadius:6,data:STAGES.map(s=>mv().filter(x=>x.stage===s).length)}]},options:opts(d,{scales:axes(d,false),plugins:{legend:{display:false}}})}),null))}
+ $('#view').innerHTML=h;
+ tables.forEach(([host,bid,title,dt])=>{dt.mount($('#'+host));regTable(bid,title,dt)});charts.forEach(mountChart);animateKpis($('#view'));
+ const v=$('#view');
+ v.querySelector('.tabs').onclick=e=>{const b=e.target.closest('[data-t]');if(b&&b.dataset.t!==RP.t){RP.t=b.dataset.t;RP.from='';RP.to='';vReports()}};
+ const bind=(id,k)=>{const el=document.getElementById(id);if(el)el.addEventListener('change',()=>{RP[k]=el.value;vReports()})};
+ bind('rq','q');bind('rn','no');bind('ru','unit');bind('rp','project');bind('rs','stage');bind('rb','by');bind('rf','from');bind('rt','to');
+ $('#rr').onclick=()=>{RP=Object.assign(RP,{q:'',no:'',unit:'',project:'',stage:'',by:'created_at',from:'',to:''});vReports()}}
+
+
+/* ---------- detail reports (contract / project) ---------- */
+const hsort=(a,b)=>(a.stage_date+String(a.id).padStart(9,'0')).localeCompare(b.stage_date+String(b.id).padStart(9,'0'));
+function stageDates(c){const d=STAGES.map(()=>'');S.history.filter(h=>String(h.contract_id)===String(c.id)).sort(hsort).forEach(h=>{d[sIdx(h.stage)]=h.stage_date});if(c.stage&&!d[sIdx(c.stage)])d[sIdx(c.stage)]=c.stage_date||'';return d}
+function stageBys(c){const d=STAGES.map(()=>'');S.history.filter(h=>String(h.contract_id)===String(c.id)).sort(hsort).forEach(h=>{d[sIdx(h.stage)]=h.changed_by||''});if(c.stage&&!d[sIdx(c.stage)])d[sIdx(c.stage)]=c.updated_by||'';return d}
+function datesModal(id){const c=S.contracts.find(x=>String(x.id)===String(id));if(!c)return;const hs=S.history.filter(h=>String(h.contract_id)===String(c.id)).sort(hsort);const rows=[['تاريخ الإضافة',c.created_at||'—',c.created_by||'—'],['تاريخ استلام العقد',c.receive_date||'—',''],['تاريخ تسليم العقد',c.delivery_date||'—',''],['تاريخ آخر تغيير للمرحلة ('+c.stage+')',c.stage_date||'—',c.updated_by||'—'],...hs.map(h=>['وصل إلى: '+h.stage,h.stage_date,h.changed_by||''])];modal('قائمة تواريخ العقد '+c.contract_no,plainTable(['البند','التاريخ','بواسطة'],rows.map(r=>r.map(E))))}
+const dayDiff=(a,b)=>Math.round((new Date(b)-new Date(a))/864e5);
+function plainTable(head,rows){return `<div class="tw"><table class="dt"><thead><tr>${head.map(h=>`<th>${E(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`}
+function stepper(sd,ci){return `<div class="pipe">${STAGES.slice(1).map((s,k)=>{const i=k+1,st=i<ci?'done':(i===ci?'cur':'todo');return `<div class="seg ${i===ci?'on':''}" style="--c:${SC[i]};${i>ci?'opacity:.45;':''}"><b>${i<ci?'✔':(i===ci?'●':'○')}</b><span>${E(s)}</span><br><span>${E(sd[i]||'—')}</span></div>`}).join('')}</div>`}
+function contractReport(id){
+ const c=S.contracts.find(x=>String(x.id)===String(id));if(!c)return;
+ const sd=stageDates(c),sb=stageBys(c),ci=sIdx(c.stage);
+ const left=c.stage===FINAL?'مكتمل':(c.delivery_date?(()=>{const d=dayDiff(today(),c.delivery_date);return d<0?`متأخر ${-d} يوم`:`${d} يوم`})():'—');
+ const info=[['رقم العقد',c.contract_no],['اسم المشروع',c.project_name||'—'],['البيان',c.description||'—'],['العدد',num(c.qty)],['الرصيد المتاح',num(c.balance)],['المطلوب تنفيذه',num(c.required)],['الوحدة الإنتاجية',c.unit||'—'],['تاريخ الإضافة',c.created_at||'—'],['تاريخ استلام العقد',c.receive_date||'—'],['تاريخ تسليم العقد',c.delivery_date||'—'],['المرحلة الحالية',c.stage],['تاريخ المرحلة',c.stage_date||'—'],['نسبة الإنجاز',prog(c)+'%'],['المتبقي للتسليم',left],['أضيف بواسطة',c.created_by||'—'],['آخر تعديل بواسطة',c.updated_by||'—'],['وقت آخر تعديل',c.updated_at||'—']];
+ const rows=[];let prev=c.receive_date||c.created_at;
+ for(let i=1;i<STAGES.length;i++){const d=sd[i],stt=i<ci?'تمت':(i===ci?'الحالية':'لم تبدأ');const dur=d&&prev?Math.max(0,dayDiff(prev,d)):null;rows.push([STAGES[i],stt,d||'—',dur===null?'—':dur+' يوم',sb[i]||'—']);if(d)prev=d}
+ const hs=S.history.filter(h=>String(h.contract_id)===String(c.id)).sort(hsort).map(h=>[h.stage,h.stage_date,h.changed_by||'']);
+ const sh=['المرحلة','الحالة','تاريخ الوصول للمرحلة','المدة منذ المرحلة السابقة','بواسطة'],hh=['المرحلة','تاريخ المرحلة','بواسطة'];
+ const ids=['d_info','d_st','d_hist'],ttl='تقرير العقد '+c.contract_no;
+ regBlock('d_info',{title:'بيانات العقد',kind:'kpi',modal:true,data:()=>({head:['البند','القيمة'],rows:info})});
+ regBlock('d_st',{title:'مراحل الإنتاج والتواريخ',kind:'table',modal:true,data:()=>({head:sh,rows})});
+ regBlock('d_hist',{title:'سجل تغيير المراحل',kind:'table',modal:true,data:()=>({head:hh,rows:hs})});
+ const m=modal(ttl+(c.project_name?' — '+c.project_name:''),`<div class="tb" style="margin-bottom:10px">${toolsHtml(ids.join(','),ttl)}</div>${stepper(sd,ci)}<h4>بيانات العقد</h4><div class="dgrid">${info.map(([a,b])=>`<div><small>${E(a)}</small>${typeof b==='number'?fnum(b):E(b)}</div>`).join('')}</div><h4>مراحل الإنتاج والتواريخ</h4>${plainTable(sh,rows.map(r=>[E(r[0]),E(r[1]),E(r[2]),E(r[3]),E(r[4])]))}<h4>سجل تغيير المراحل</h4>${hs.length?plainTable(hh,hs.map(r=>[badge(r[0]),E(r[1]),E(r[2])])):'<div class="empty">لا يوجد سجل</div>'}`,{wide:true,onClose:()=>ids.forEach(i=>delete BLK[i])})}
+function projectReport(name){
+ const rs=S.contracts.filter(r=>(r.project_name||'بدون مشروع')===name),m=metrics(rs),ttl='تقرير المشروع '+name;
+ const kp=[['عدد العقود',m.total],['إجمالي العدد',m.qty],['المطلوب تنفيذه',m.req],['الرصيد المتاح',m.bal],['متوسط الإنجاز %',m.prog],['عقود متأخرة',m.late.length]];
+ const stRows=STAGES.map((s,i)=>[s,rs.filter(r=>sIdx(r.stage)===i).length]);
+ const head=['رقم العقد','الوحدة','تاريخ الاستلام','تاريخ التسليم','المرحلة الحالية',...STAGES.slice(1).map(s=>'تاريخ: '+s),'الإنجاز %'];
+ const raw=rs.map(c=>{const sd=stageDates(c);return[c.contract_no,c.unit||'—',c.receive_date||'—',c.delivery_date||'—',c.stage,...sd.slice(1).map(x=>x||'—'),prog(c)]});
+ const ids=['d_info','d_stg','d_ctr'];
+ regBlock('d_info',{title:'ملخص المشروع',kind:'kpi',modal:true,data:()=>({head:['المؤشر','القيمة'],rows:kp})});
+ regBlock('d_stg',{title:'توزيع العقود على المراحل',kind:'kpi',modal:true,data:()=>({head:['المرحلة','عدد العقود'],rows:stRows})});
+ regBlock('d_ctr',{title:'العقود ومراحلها وتواريخها',kind:'table',modal:true,data:()=>({head,rows:raw})});
+ const html=rs.map((c,i)=>[ctrLink(c),E(raw[i][1]),E(raw[i][2]),E(raw[i][3]),badge(c.stage),...raw[i].slice(5,11).map(E),`<span class="pg"><i style="width:${raw[i][11]}%"></i></span> ${raw[i][11]}%`]);
+ const m2=modal(ttl,`<div class="tb" style="margin-bottom:10px">${toolsHtml(ids.join(','),ttl)}</div><div class="grid g4">${kpiHtml(kp.map((k,i)=>({id:'p'+i,l:k[0],v:k[1],c:['#4f8cff','#19c3ff','#ffb020','#2de2a6','#b36bff','#ff4d6d'][i],i:['📄','🔢','🎯','📦','📈','⏰'][i]})))}</div><h4>توزيع العقود على مراحل الإنتاج</h4><div class="pipe">${stRows.map(([s,n],i)=>`<div class="seg" style="--c:${SC[i]}"><b>${n}</b><span>${E(s)}</span></div>`).join('')}</div><h4>العقود ومراحلها وتواريخ كل مرحلة (اضغط على رقم العقد لتقريره)</h4>${plainTable(head,html)}`,{wide:true,onClose:()=>ids.forEach(i=>delete BLK[i])});
+ animateKpis(m2.el)}
+document.addEventListener('click',e=>{const a=e.target.closest('[data-ctr],[data-proj],[data-dts]');if(!a)return;e.preventDefault();if(a.dataset.ctr)contractReport(a.dataset.ctr);else if(a.dataset.proj)projectReport(a.dataset.proj);else datesModal(a.dataset.dts)});
+
+/* ---------- users ---------- */
+function vUsers(){
+ const cols=[{k:'photo',t:'الصورة',get:r=>'',html:r=>r.photo?`<img src="${E(r.photo)}" style="width:34px;height:34px;border-radius:50%;object-fit:cover">`:'👤'},{k:'full_name',t:'الاسم الكامل'},{k:'username',t:'اسم المستخدم'},{k:'birth_date',t:'تاريخ الميلاد'},{k:'created_at',t:'تاريخ الإضافة'},{k:'is_admin',t:'الدور',get:r=>r.is_admin?'مدير النظام':'مستخدم'},{k:'units',t:'الوحدات المسموحة',get:r=>r.is_admin?'كل الوحدات':((r.units||[]).join('، ')||'— لا شيء —')}];
+ const dt=new DT({cols,rows:()=>S.users,actions:r=>`${can('users.edit')?`<button class="btn sm" data-a="ed" data-id="${r.id}">✏️</button>`:''}${can('users.delete')&&String(r.id)!==String(S.user.id)?`<button class="btn sm bad" data-a="del" data-id="${r.id}">🗑</button>`:''}`,
+  onAct:async(a,id)=>{const u=S.users.find(x=>String(x.id)===String(id));if(!u)return;if(a==='ed')userForm(u);else if(a==='del'&&await confirmBox(`حذف المستخدم ${u.full_name}؟`))act(async()=>{await API.call('deleteUser',{id:u.id});toast('تم الحذف');await reload();rerender()})}});
+ $('#view').innerHTML=`<div class="vh"><h2>👥 المستخدمون</h2><div class="tb"><input id="gq" placeholder="🔍 بحث...">${can('users.add')?'<button class="btn pri" id="add">＋ مستخدم جديد</button>':''}</div></div><div class="panel" id="tbl"></div>`;
+ dt.mount($('#tbl'));$('#gq').oninput=e=>{dt.q=e.target.value;dt.body()};const ad=$('#add');if(ad)ad.onclick=()=>userForm(null)}
+function userForm(u){
+ const n=!u,v=u||{full_name:'',username:'',birth_date:'',photo:'',is_admin:false,perms:[]};let photo=v.photo||'';
+ const perms=new Set(v.perms||[]),units=new Set(v.units||[]);
+ const m=modal(n?'إضافة مستخدم':'تعديل المستخدم',`<form id="uf"><div class="upl"><div id="av"></div><label class="btn">📷 إرفاق صورة<input type="file" accept="image/*" id="pf" hidden></label><button type="button" class="btn sm" id="pr">إزالة</button></div><br>
+ <div class="fg"><label>الاسم الكامل *<input name="full_name" value="${E(v.full_name)}" required></label><label>اسم المستخدم *<input name="username" value="${E(v.username)}" required autocomplete="off" dir="ltr"></label>
+ <label>كلمة المرور ${n?'*':'(اتركها فارغة للإبقاء على الحالية)'}<input name="password" type="password" ${n?'required':''} autocomplete="new-password" dir="ltr"></label><label>تاريخ الميلاد<input type="date" name="birth_date" value="${E(v.birth_date)}"></label>
+ ${S.user.is_admin?`<label class="full" style="flex-direction:row;align-items:center;color:var(--tx)"><input type="checkbox" id="adm" style="width:auto" ${v.is_admin?'checked':''}> مدير النظام (كل الصلاحيات)</label>`:''}</div>
+ <h4>🏭 الوحدات الإنتاجية المسموحة</h4><p class="mut" style="margin:0 0 6px">المستخدم يرى ويعدّل بيانات وعقود وحداته فقط (مدير النظام يرى الكل). بدون اختيار وحدة لا يرى أي عقد.</p><div class="perm"><div class="pl" id="um"></div></div>
+ <h4>🔐 الصلاحيات (الشاشات والتقارير وبنودها)</h4><div id="pm"></div>
+ <div class="fa"><button type="button" class="btn" data-c>إلغاء</button><button class="btn pri">${n?'إضافة':'حفظ'}</button></div></form>`,{wide:true,sticky:true});
+ const av=()=>{$('#av',m.el).innerHTML=photo?`<img class="avatar" src="${E(photo)}">`:'<div class="avatar">👤</div>'};av();
+ $('#pf',m.el).onchange=async e=>{const f=e.target.files[0];if(f)act(async()=>{photo=await imgData(f,200);av()})};$('#pr',m.el).onclick=()=>{photo='';av()};
+ const mine=p=>S.user.is_admin||(S.user.perms||[]).includes(p);
+ const drawP=()=>{$('#pm',m.el).innerHTML=PERM_TREE.map(g=>`<div class="perm"><h4>${g.t}<label class="btn sm"><input type="checkbox" data-all="${g.k}"> تحديد الكل</label></h4><div class="pl">${g.items.map(([k,t])=>{const p=g.k+'.'+k;return`<label><input type="checkbox" data-p="${p}" ${perms.has(p)?'checked':''} ${mine(p)?'':'disabled'}>${t}</label>`}).join('')}</div></div>`).join('')};drawP();
+ const ulist=S.user.is_admin?allUnits():(S.user.units||[]);$('#um',m.el).innerHTML=ulist.length?ulist.map(x=>`<label><input type="checkbox" data-u="${E(x)}" ${units.has(x)?'checked':''}>${E(x)}</label>`).join(''):'<span class="mut">لا توجد وحدات إنتاجية، أضفها من شاشة إدارة البرنامج</span>';$('#um',m.el).onchange=e=>{const c=e.target;if(c.dataset.u!==undefined)c.checked?units.add(c.dataset.u):units.delete(c.dataset.u)};
+ const adm=$('#adm',m.el),tog=()=>{$('#pm',m.el).style.opacity=adm&&adm.checked?.4:1;$('#pm',m.el).style.pointerEvents=adm&&adm.checked?'none':''};if(adm){adm.onchange=tog;tog()}
+ $('#pm',m.el).onchange=e=>{const t=e.target;if(t.dataset.p){t.checked?perms.add(t.dataset.p):perms.delete(t.dataset.p)}else if(t.dataset.all){$$(`[data-p^="${t.dataset.all}."]`,m.el).forEach(c=>{if(!c.disabled){c.checked=t.checked;t.checked?perms.add(c.dataset.p):perms.delete(c.dataset.p)}})}};
+ $('[data-c]',m.el).onclick=m.close;
+ $('#uf',m.el).onsubmit=e=>{e.preventDefault();const d=Object.fromEntries(new FormData(e.target));d.photo=photo;d.perms=[...perms];d.units=[...units];d.is_admin=!!(adm&&adm.checked);if(u)d.id=u.id;act(async()=>{await API.call('saveUser',d);m.close();toast('تم الحفظ');await reload();rerender()})}}
+
+/* ---------- settings ---------- */
+function vSettings(){
+ const st=S.settings,ed=can('settings.edit');let logo=st.logo||'';
+ $('#view').innerHTML=`<div class="vh"><h2>⚙️ إدارة البرنامج</h2></div><div class="panel"><div class="fg">
+ <label class="full">اسم البرنامج<input id="sn" value="${E(st.name)}" ${ed?'':'disabled'}></label>
+ <label class="full">شعار البرنامج (يظهر في الشاشة الرئيسية وشاشة الدخول والتقارير)<div class="upl"><div class="logo" id="lgv" style="width:90px;height:90px"></div>${ed?'<label class="btn">📎 إرفاق شعار<input type="file" accept="image/*" id="lf" hidden></label><button class="btn sm" id="lr">إزالة</button>':''}</div></label>
+ <label class="full">الوحدات الإنتاجية (وحدة في كل سطر)<textarea id="su" rows="5" ${ed&&S.user.is_admin?'':'disabled'}>${E((st.units||[]).join('\n'))}</textarea></label>
+ <label>رقم واتساب الافتراضي للإرسال (صيغة دولية)<input id="sw" dir="ltr" value="${E(st.wa_phone||'')}" ${ed?'':'disabled'}></label></div>
+ ${ed?'<div class="fa"><button class="btn pri" id="ss">💾 حفظ الإعدادات</button></div>':''}</div>
+ ${can('settings.demo')?'<div class="panel"><h3>🧪 بيانات تجريبية</h3><p class="mut">لتجربة اللوحات والرسوم: يضيف حوالي 48 عقداً تجريبياً (لا يمسّ العقود الموجودة).</p><button class="btn" id="sd">إضافة بيانات تجريبية</button></div>':''}`;
+ const sl=()=>{$('#lgv').innerHTML=logo?`<img src="${E(logo)}">`:'📑'};sl();
+ if(ed){$('#lf').onchange=e=>{const f=e.target.files[0];if(f)act(async()=>{logo=await imgData(f,320);sl()})};$('#lr').onclick=()=>{logo='';sl()};
+  $('#ss').onclick=()=>act(async()=>{await API.call('saveSettings',{name:$('#sn').value.trim()||st.name,logo,units:$('#su').value.split('\n').map(x=>x.trim()).filter(Boolean),wa_phone:$('#sw').value.trim()});toast('تم حفظ الإعدادات');await reload();rerender()})}
+ const sd=$('#sd');if(sd)sd.onclick=()=>act(async()=>{const us=allUnits().length?allUnits():['الوحدة الأولى','الوحدة الثانية','الوحدة الثالثة'];if(!st.units.length)await API.call('saveSettings',{name:st.name,logo:st.logo,units:us,wa_phone:st.wa_phone});const items=['كراسي مكتبية','أبواب معدنية','لوكرات حديد','طاولات اجتماعات','أسرّة طبية','خزائن ملفات','دواليب تخزين','أثاث مدرسي','مقاعد انتظار','أرفف معدنية'],t=today(),list=[];
+  for(let i=0;i<48;i++){const stg=Math.floor(Math.random()*7),rec=addDays(t,-Math.floor(Math.random()*90)),del=addDays(rec,20+Math.floor(Math.random()*70)),qty=(1+Math.floor(Math.random()*40))*25,req=Math.round(qty*(.4+Math.random()*.6));list.push({contract_no:'تجريبي-'+(1001+i),project_name:['مشروع المستشفى الجامعي','مشروع المدرسة الدولية','مشروع الفندق السياحي','مشروع الجامعة الحكومية','مشروع المجمع الإداري'][i%5],description:items[i%items.length],qty,required:req,balance:Math.max(0,qty-Math.round(req*Math.random())),unit:us[i%us.length],receive_date:rec,delivery_date:del,stage:STAGES[stg],stage_date:addDays(rec,Math.min(60,stg*8)>0?Math.min(Math.floor((new Date(t)-new Date(rec))/864e5),stg*8):0),created_at:rec})}
+  const r=await API.call('bulkContracts',{list});toast(`تمت إضافة ${r.added} عقد`);await reload();rerender()})}
+
+/* ---------- password ---------- */
+function pwForm(){const m=modal('تغيير كلمة المرور',`<div class="fg"><label class="full">كلمة المرور الحالية<input type="password" id="po"></label><label class="full">كلمة المرور الجديدة<input type="password" id="pn"></label></div><div class="fa"><button class="btn pri" id="pk">حفظ</button></div>`,{sticky:true});$('#pk',m.el).onclick=()=>act(async()=>{await API.call('changePassword',{old:$('#po',m.el).value,new:$('#pn',m.el).value});m.close();toast('تم تغيير كلمة المرور')})}
+
+/* ---------- boot ---------- */
+async function doLogin(){const u=$('#lu').value.trim(),p=$('#lp').value;if(!u||!p){$('#lerr').textContent='أدخل اسم المستخدم وكلمة المرور';return}$('#lgo').disabled=true;try{const r=await API.call('login',{username:u,password:p});API.token=r.token;try{localStorage.setItem('ctk',r.token)}catch(_){}await enter()}catch(e){$('#lerr').textContent=e.message}finally{$('#lgo').disabled=false}}
+$('#lgo').onclick=doLogin;$('#lp').onkeydown=e=>{if(e.key==='Enter')doLogin()};$('#lu').onkeydown=e=>{if(e.key==='Enter')$('#lp').focus()};
+$('#outb').onclick=async()=>{try{await API.call('logout')}catch(_){}API.token=null;try{localStorage.removeItem('ctk')}catch(_){}S.user=null;showLogin()};
+$('#pwb').onclick=pwForm;$('#menu').onclick=()=>$('#nav').classList.toggle('open');
+$('#nav').onclick=e=>{const a=e.target.closest('[data-go]');if(a)go(a.dataset.go)};
+setInterval(()=>{const c=$('#clock');if(c)c.textContent=new Date().toLocaleString('en-GB')},1000);
+if(window.Chart){Chart.defaults.font.family="Cairo, Tahoma, sans-serif"}
+(async function(){brand();showLogin();try{const p=await API.call('publicInfo');S.settings=Object.assign(S.settings,p);brand()}catch(_){}
+ try{const t=localStorage.getItem('ctk');if(t){API.token=t;await enter()}}catch(e){API.token=null}})();
+</script>
+</body>
+</html>
